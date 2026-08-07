@@ -20,6 +20,7 @@ Part of the [ha-parcel-integrations](https://github.com/ha-parcel-integrations) 
 - [Removal](#removal)
 - [Sensors](#sensors)
 - [Parcel status reference](#parcel-status-reference)
+- [Known limitation: no delivery forecast](#known-limitation-no-delivery-forecast)
 - [Events](#events)
 - [Services](#services)
 - [Examples](#examples)
@@ -33,11 +34,10 @@ Part of the [ha-parcel-integrations](https://github.com/ha-parcel-integrations) 
 ## Features
 
 - Track any number of SunYou parcels by tracking code — no account needed
-- Per-parcel sensor with the canonical status (`registered` / `in_transit` / `out_for_delivery` / `delivered` / …), the carrier's own status text, the expected delivery window and a tracking deep-link
-- Summary sensors: incoming parcels, next delivery, recently delivered parcels
-- Read-only **Deliveries** calendar with the expected delivery windows
+- Per-parcel sensor with the canonical status (`registered` / `in_transit` / `out_for_delivery` / `delivered` / …), the carrier's own status text, origin/destination country and a tracking deep-link
+- Summary sensors: incoming parcels, recently delivered parcels
 - `sunyou.track_parcel` / `sunyou.untrack_parcel` services, so a dashboard button can add a parcel
-- Events + device triggers for no-code automations (parcel registered, status changed, delivered, delivery time changed)
+- Events + device triggers for no-code automations (parcel registered, status changed, delivered)
 - Opt-in per-parcel status history
 - Manual refresh button and a diagnostic last-update sensor
 
@@ -87,11 +87,13 @@ Standard HA removal applies: **Settings → Devices & Services → SunYou → �
 |---|---|
 | `sensor.sunyou_incoming_parcels` | Number of active tracked parcels, full list under the `parcels` attribute |
 | `sensor.sunyou_parcel_<code>` | One per tracked parcel; state is the canonical status, attributes carry the full normalised parcel |
-| `sensor.sunyou_next_delivery` | Earliest expected delivery moment across all active parcels |
+| `sensor.sunyou_next_delivery` | Earliest expected delivery moment across all active parcels. Present for parity with the other carriers in the suite, but SunYou never gives a delivery forecast — see [Known limitation](#known-limitation-no-delivery-forecast) |
 | `sensor.sunyou_delivered_parcels` | Recently delivered parcels (see the retention option) |
 | `sensor.sunyou_last_successful_update` | Diagnostic: when SunYou was last polled successfully |
 
 A delivered parcel moves from its per-parcel sensor to the delivered sensor automatically.
+
+A **Deliveries** calendar entity is also created, for parity with the other carriers in the suite, but it will always be empty for SunYou — see [Known limitation](#known-limitation-no-delivery-forecast).
 
 ## Parcel status reference
 
@@ -108,6 +110,18 @@ The `status` field is the carrier-agnostic enum shared by the whole integration 
 
 The carrier's own human-readable text is always available as `raw_status`. SunYou's status vocabulary is not proven closed (see [Debugging](#debugging)) — an unrecognised code is reported as `unknown` with a one-shot log warning rather than guessed at.
 
+## Known limitation: no delivery forecast
+
+SunYou's tracking API never returns an expected delivery date or window — across 21 real parcels used to confirm this payload, the only date-like field on a delivered parcel was `transitDays` (elapsed days since shipping, not an ETA). Nothing in the response is a forecast.
+
+Three entities exist for parity with the other carriers in this suite, but are permanently inert for SunYou as a result:
+
+- `sensor.sunyou_next_delivery` never has a state.
+- The **Deliveries** calendar entity never has an event.
+- `sunyou_parcel_delivery_time_changed` never fires, and its device trigger never triggers.
+
+Every other sensor, event and service works normally.
+
 ## Events
 
 The integration fires these on the event bus (also available as device triggers on the SunYou device):
@@ -117,7 +131,7 @@ The integration fires these on the event bus (also available as device triggers 
 | `sunyou_parcel_registered` | A new parcel appears in the active list |
 | `sunyou_parcel_status_changed` | A parcel's canonical status changes (`old_status` / `new_status` in the payload), except the final hop to delivered |
 | `sunyou_parcel_delivered` | A parcel is delivered |
-| `sunyou_parcel_delivery_time_changed` | The expected delivery window changes |
+| `sunyou_parcel_delivery_time_changed` | The expected delivery window changes. Wired for parity with the other carriers in the suite, but SunYou never gives a delivery forecast, so this event can never fire — see [Known limitation](#known-limitation-no-delivery-forecast) |
 
 Every payload is the full normalised parcel plus the hub's `device_id`. Events are suppressed on the first refresh after start-up.
 
