@@ -49,7 +49,9 @@ aggregator, once as SunYou and once as the last-mile carrier
 (`raw.trackingNumber` is the join key, exactly like Cainiao's `realMailNo` —
 an open aggregator-side item, not something this repo resolves). SunYou
 exposes nothing about the last leg (no sender/receiver/window/pickup/weight);
-the `None`s in `normalize_parcel` are intentional.
+the `None`s in `normalize_parcel` are intentional. Reflected in `const.py`'s
+`CAPABILITIES` (feeds the docs site's comparison table) — keep the two in
+agreement if that ever changes.
 
 - **`displayStatus` is never read, anywhere, including `raw`.** It is a
   coarse 3-value UI bucket, not a status — on the wire, all 16 delivered
