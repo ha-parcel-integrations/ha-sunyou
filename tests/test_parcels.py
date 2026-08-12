@@ -35,6 +35,8 @@ from .payloads import (
     event,
     failed_sample,
     not_found_sample,
+    pickup_sample,
+    returning_sample,
 )
 
 # ---------------------------------------------------------------------------
@@ -49,19 +51,31 @@ from .payloads import (
         ("102", ParcelStatus.REGISTERED),  # InboundScan
         ("105", ParcelStatus.IN_TRANSIT),  # Dispatch
         ("106", ParcelStatus.IN_TRANSIT),  # PortDeparture
+        ("200", ParcelStatus.IN_TRANSIT),  # InTransit
         ("201", ParcelStatus.IN_TRANSIT),  # TransitCountryArrival
         ("205", ParcelStatus.IN_TRANSIT),  # TransitCountryDeparted
         ("206", ParcelStatus.IN_TRANSIT),  # DestinationAirPortArrival
+        ("20622", ParcelStatus.IN_TRANSIT),  # ClearanceInspect
         ("2061", ParcelStatus.IN_TRANSIT),  # HandoverLastMile
         ("2062", ParcelStatus.IN_TRANSIT),  # ClearanceProcess
         ("2064", ParcelStatus.IN_TRANSIT),  # ClearanceSuccessed
         ("2067", ParcelStatus.IN_TRANSIT),  # DeliveryStationArrival
         ("2068", ParcelStatus.OUT_FOR_DELIVERY),  # DeliveryStationDepart
+        ("207", ParcelStatus.AT_PICKUP_POINT),  # ReadyForPickup
         ("2071", ParcelStatus.OUT_FOR_DELIVERY),  # OutForDelivery
         ("2072", ParcelStatus.OUT_FOR_DELIVERY),  # OutForDelivery_Second
         ("208", ParcelStatus.PROBLEM),  # DeliveryFail_Other
+        ("20801", ParcelStatus.PROBLEM),  # DeliveryFail_Retry
+        ("20802", ParcelStatus.PROBLEM),  # DeliveryFail_Address
+        ("20803", ParcelStatus.PROBLEM),  # DeliveryFail_Contact
+        ("20806", ParcelStatus.PROBLEM),  # DeliveryFail_NoService
+        ("20810", ParcelStatus.PROBLEM),  # DeliveryFail_Return
         ("20899", ParcelStatus.PROBLEM),  # DeliveryFail_SecondOther
         ("209", ParcelStatus.DELIVERED),  # Delivered
+        ("20903", ParcelStatus.DELIVERED),  # Delivered_Mailbox
+        ("20906", ParcelStatus.DELIVERED),  # Delivered_Doorstep
+        ("210", ParcelStatus.RETURNING),  # Returned
+        ("220", ParcelStatus.PROBLEM),  # Exception
     ],
 )
 def test_map_parcel_status_known(status, expected):
@@ -348,6 +362,42 @@ def test_normalize_delivery_fail_parcel_maps_to_problem():
     assert parcel["delivered"] is False
 
 
+def test_delivery_fail_return_is_not_confused_with_returned():
+    """``20810``/``DeliveryFail_Return`` names a failure *reason* and must map
+    to PROBLEM, not RETURNING — despite "Return" in the name, it is not the
+    ``210``/``Returned`` event (the parcel actually in motion back to
+    sender)."""
+    assert map_parcel_status("20810", "DeliveryFail_Return") == ParcelStatus.PROBLEM
+    assert map_parcel_status("210", "Returned") == ParcelStatus.RETURNING
+
+
+def test_delivered_mailbox_is_a_delivered_sibling():
+    """``20903``/``Delivered_Mailbox`` is ``209``'s 5-digit sibling, same shape
+    as ``20899``/``DeliveryFail_SecondOther``."""
+    assert map_parcel_status("20903", "Delivered_Mailbox") == ParcelStatus.DELIVERED
+
+
+def test_normalize_pickup_parcel_sets_pickup_flag():
+    """``207``/``ReadyForPickup``, confirmed live 2026-08-13. ``pickup_point``
+    stays ``None`` — no event ever carries a location string."""
+    parcel = normalize_parcel(pickup_sample())
+    assert parcel["status"] == ParcelStatus.AT_PICKUP_POINT
+    assert parcel["raw_status"] == "ReadyForPickup"
+    assert parcel["delivered"] is False
+    assert parcel["pickup"] is True
+    assert parcel["pickup_point"] is None
+
+
+def test_normalize_returning_parcel_is_distinct_from_problem():
+    """``210``/``Returned``, confirmed live 2026-08-13 — the "return code"
+    sibling the ``208``/``20899`` numbering implied. Must win over the earlier
+    ``208`` failure event and map to RETURNING, not PROBLEM."""
+    parcel = normalize_parcel(returning_sample())
+    assert parcel["status"] == ParcelStatus.RETURNING
+    assert parcel["raw_status"] == "Returned"
+    assert parcel["delivered"] is False
+
+
 def test_normalize_out_of_order_events_still_pick_the_newest():
     """Newest is decided by parsed timestamp, never by list position."""
     raw = delivered_sample()
@@ -383,15 +433,6 @@ def test_normalize_keeps_last_mile_handoff_under_raw():
     parcel = normalize_parcel(delivered_sample())
     assert parcel["barcode"] != "SU014952148MI"
     assert parcel["raw"]["trackingNumber"] == "SU014952148MI"
-
-
-def test_normalize_warns_once_on_first_carrier_name(caplog):
-    parcels_module._carrier_name_logged = False
-    normalize_parcel(delivered_sample())
-    normalize_parcel(delivered_sample())
-    assert caplog.text.count("carries a last-mile carrierName") == 1
-    assert "meest" in caplog.text
-    assert "issues/new" in caplog.text
 
 
 # ---------------------------------------------------------------------------

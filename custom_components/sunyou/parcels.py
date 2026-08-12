@@ -63,30 +63,58 @@ NEW_ISSUE_URL = (
 # and a return code. An unrecognised pair still surfaces as ``unknown`` plus a
 # one-shot warning rather than guessing.
 #
-# Deliberately **no** ``at_pickup_point`` mapping: nothing in the observed
-# ladder is a "waiting" state (it is a pipeline of movements only), and the
-# only thing that ever suggested one was the same refuted ``displayStatus``
-# table. If a pickup code does turn up, Cainiao's ``GTMS_STA_SIGNED`` rule
-# decides it — ``at_pickup_point``, never ``delivered`` — but do not pre-map a
-# guess; the warning below is what tells us if this needs revisiting.
+# ``at_pickup_point`` (``207``/``ReadyForPickup``), the ``206xx`` clearance
+# sibling ``20622``/``ClearanceInspect``, a low ``200``/``InTransit`` and
+# ``210``/``Returned`` were all confirmed live on 2026-08-13, from a user's
+# WARNING log rather than the 21-parcel research capture. Two things the doc
+# only speculated about are now settled: the earlier "probably no waiting
+# state" reading is superseded (Cainiao's ``GTMS_STA_SIGNED`` rule applies —
+# a pickup code is ``at_pickup_point``, never ``delivered``), and ``210`` is
+# the "return code" sibling the ``208``/``20899`` numbering implied — mapped
+# to ``RETURNING``, not ``PROBLEM``, since the enum has a dedicated member for
+# "failed delivery, going back to sender" and ``208`` already covers the
+# failure event itself.
+#
+# The same session also confirmed two ``209`` delivery-location siblings
+# (``20903``/``Delivered_Mailbox``, ``20906``/``Delivered_Doorstep`` ->
+# ``DELIVERED``, same shape as ``20899``/``DeliveryFail_SecondOther``) plus
+# four more ``208xx`` delivery-fail *reasons* (``20801``/``Retry``,
+# ``20803``/``Contact``, ``20806``/``NoService``, ``20810``/``Return``) and a
+# bare ``220``/``Exception``. All five map to ``PROBLEM``, not ``RETURNING``
+# — each is still the *attempt-failed* event (``DeliveryFail_*`` / a generic
+# exception), not the "now in motion back to sender" event that
+# ``210``/``Returned`` is. Do not read ``DeliveryFail_Return`` as a ``210``
+# synonym: it is the failure reason, not the return leg.
 _STATUS_MAP: dict[str, ParcelStatus] = {
     "101": ParcelStatus.REGISTERED,        # PreAlert
     "102": ParcelStatus.REGISTERED,        # InboundScan
     "105": ParcelStatus.IN_TRANSIT,        # Dispatch
     "106": ParcelStatus.IN_TRANSIT,        # PortDeparture
+    "200": ParcelStatus.IN_TRANSIT,        # InTransit
     "201": ParcelStatus.IN_TRANSIT,        # TransitCountryArrival
     "205": ParcelStatus.IN_TRANSIT,        # TransitCountryDeparted
     "206": ParcelStatus.IN_TRANSIT,        # DestinationAirPortArrival
+    "20622": ParcelStatus.IN_TRANSIT,      # ClearanceInspect
     "2061": ParcelStatus.IN_TRANSIT,       # HandoverLastMile
     "2062": ParcelStatus.IN_TRANSIT,       # ClearanceProcess
     "2064": ParcelStatus.IN_TRANSIT,       # ClearanceSuccessed (SunYou's own spelling)
     "2067": ParcelStatus.IN_TRANSIT,       # DeliveryStationArrival
     "2068": ParcelStatus.OUT_FOR_DELIVERY, # DeliveryStationDepart
+    "207": ParcelStatus.AT_PICKUP_POINT,   # ReadyForPickup
     "2071": ParcelStatus.OUT_FOR_DELIVERY, # OutForDelivery
     "2072": ParcelStatus.OUT_FOR_DELIVERY, # OutForDelivery_Second
     "208": ParcelStatus.PROBLEM,           # DeliveryFail_Other
+    "20801": ParcelStatus.PROBLEM,         # DeliveryFail_Retry
+    "20802": ParcelStatus.PROBLEM,         # DeliveryFail_Address
+    "20803": ParcelStatus.PROBLEM,         # DeliveryFail_Contact
+    "20806": ParcelStatus.PROBLEM,         # DeliveryFail_NoService
+    "20810": ParcelStatus.PROBLEM,         # DeliveryFail_Return (the reason, not the return leg)
     "20899": ParcelStatus.PROBLEM,         # DeliveryFail_SecondOther
     "209": ParcelStatus.DELIVERED,         # Delivered
+    "20903": ParcelStatus.DELIVERED,       # Delivered_Mailbox
+    "20906": ParcelStatus.DELIVERED,       # Delivered_Doorstep
+    "210": ParcelStatus.RETURNING,         # Returned
+    "220": ParcelStatus.PROBLEM,           # Exception
 }
 
 # ---------------------------------------------------------------------------
@@ -99,7 +127,6 @@ _unmapped_statuses_logged: set[str] = set()
 _unexpected_legs_logged: set[str] = set()
 _create_time_parse_failure_logged = False
 _missing_timezone_logged = False
-_carrier_name_logged = False
 
 
 def _warn_unmapped_status(status: str, event_code: str | None) -> None:
@@ -163,29 +190,6 @@ def _warn_missing_timezone(create_time: str) -> None:
         "to UTC, which can put the timestamp up to 8 hours out. Open an "
         "issue and paste this line: %s",
         create_time,
-        NEW_ISSUE_URL,
-    )
-
-
-def _note_carrier_name(raw: dict) -> None:
-    """One-shot: flag the first parcel carrying a last-mile ``carrierName``.
-
-    Seen only once in the 21-parcel research capture, so the field inventory
-    for the handoff block (``carrierName``/``carrierPhone``/``carrierWebsite``)
-    is thin. Not a status question, just a "please confirm this shape" ask.
-    """
-    global _carrier_name_logged
-    if _carrier_name_logged:
-        return
-    name = raw.get("carrierName")
-    if not name:
-        return
-    _carrier_name_logged = True
-    _LOGGER.warning(
-        "SunYou parcel carries a last-mile carrierName (%r) — this block was "
-        "seen only once in 21 research parcels, so please help confirm its "
-        "shape is complete. Open an issue and attach diagnostics: %s",
-        name,
         NEW_ISSUE_URL,
     )
 
@@ -393,8 +397,9 @@ def normalize_parcel(raw: dict, *, include_history: bool = False) -> dict:
     * **``planned_from`` / ``planned_to``** — nothing in the payload is a
       forecast. ``transitDays`` is *elapsed* days on a delivered parcel, not
       an ETA, so it is not read as one.
-    * **``pickup_point``** — see the "no ``at_pickup_point``" note on
-      :data:`_STATUS_MAP`; the field would have nowhere to come from anyway.
+    * **``pickup_point``** — ``at_pickup_point`` is mapped (see
+      :data:`_STATUS_MAP`) but no event ever carries a location string, so the
+      field stays ``None`` even while ``status`` is ``at_pickup_point``.
     * **``weight`` / ``dimensions``** — never exposed on this endpoint.
 
     ``barcode`` is ``orderNo`` — **not** ``trackingNumber``, which is the
@@ -409,8 +414,6 @@ def normalize_parcel(raw: dict, *, include_history: bool = False) -> dict:
     ``displayStatus`` is stripped out of ``raw`` entirely, on top of never
     being read, so nobody downstream is tempted to resurrect it either.
     """
-    _note_carrier_name(raw)
-
     order_no = raw.get("orderNo")
     events = _collect_events(raw)
     newest = _newest(events)

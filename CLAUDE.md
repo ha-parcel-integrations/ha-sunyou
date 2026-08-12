@@ -74,12 +74,15 @@ agreement if that ever changes.
   combines the two per event; a missing or malformed `timeZone` falls back to
   UTC (warned once) rather than raising, and a `createTime` that fails to
   parse drops that one event (warned once) rather than guessing.
-- **No `at_pickup_point` mapping, deliberately.** Nothing in the 17-code
-  vocabulary is a "waiting" state — it is a pipeline of movements only — and
-  the only thing that ever suggested one was the refuted `displayStatus`
-  table. **Do not add one without new evidence.** If a pickup code does turn
-  up, Cainiao's `GTMS_STA_SIGNED` rule decides it: `at_pickup_point`, never
-  `delivered`.
+- **`at_pickup_point` and `returning` are mapped, confirmed live 2026-08-13**
+  from a user's WARNING log, not the 21-parcel research capture: `207`
+  (`ReadyForPickup`) -> `AT_PICKUP_POINT` (Cainiao's `GTMS_STA_SIGNED` rule —
+  a pickup code is `at_pickup_point`, never `delivered`) and `210`
+  (`Returned`) -> `RETURNING`, distinct from the `208`/`20899` failure events
+  that precede it. `200` (`InTransit`) and `20622` (`ClearanceInspect`) were
+  confirmed the same day, both `IN_TRANSIT`. `carrier-research/api/sunyou/`
+  is updated to match — the doc's "there may simply be no `at_pickup_point`"
+  reasoning is superseded, not a standing ruling anymore.
 - **Poll interval is `configurable`, unlike Cainiao's `fixed`.** ~70 probe
   requests in a few minutes during research drew no 429, no block and no
   captcha — SunYou is a standalone operator, not Alibaba, so the soft-ban risk

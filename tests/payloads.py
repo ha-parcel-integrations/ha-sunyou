@@ -19,6 +19,8 @@ import json
 DELIVERED_CODE = "SYAE006809461"
 ACTIVE_CODE = "SYAE100000001"
 FAILED_CODE = "SYAE100000002"
+PICKUP_CODE = "SYAE100000003"
+RETURNING_CODE = "SYAE100000004"
 NOT_FOUND_CODE = "SY999999999"
 
 
@@ -192,6 +194,76 @@ def failed_sample(order_no: str = FAILED_CODE) -> dict:
                         "+02:00",
                         content="Delivery attempt failed - recipient not available",
                     ),
+                ]
+            }
+        },
+    }
+
+
+def pickup_sample(order_no: str = PICKUP_CODE) -> dict:
+    """A parcel ready to collect, newest event ``207 ReadyForPickup``.
+
+    Synthetic, built from the pair confirmed live 2026-08-13 (not part of the
+    21-parcel research capture). Maps to ``at_pickup_point``.
+    """
+    return {
+        "orderNo": order_no,
+        "has": True,
+        "displayStatus": "1",
+        "lastContent": "Ready For Pickup",
+        "lastEventCode": "ReadyForPickup",
+        "lastStatus": "207",
+        "lastUpdate": "2026-08-12 09:00:00",
+        "orgCountry": "CN",
+        "dstCountry": "NL",
+        "trackingNumber": None,
+        "transitDays": None,
+        "result": {
+            "origin": {
+                "items": [
+                    event(
+                        "2067",
+                        "DeliveryStationArrival",
+                        "2026-08-11 08:00:00",
+                        "+02:00",
+                    ),
+                    event("207", "ReadyForPickup", "2026-08-12 09:00:00", "+02:00"),
+                ]
+            }
+        },
+    }
+
+
+def returning_sample(order_no: str = RETURNING_CODE) -> dict:
+    """A parcel being sent back to sender, newest event ``210 Returned``.
+
+    Synthetic, built from the pair confirmed live 2026-08-13 (not part of the
+    21-parcel research capture). Maps to ``returning``, distinct from the
+    ``208``/``20899`` failure events that precede it.
+    """
+    return {
+        "orderNo": order_no,
+        "has": True,
+        "displayStatus": "1",
+        "lastContent": "Returned",
+        "lastEventCode": "Returned",
+        "lastStatus": "210",
+        "lastUpdate": "2026-07-28 10:15:00",
+        "orgCountry": "CN",
+        "dstCountry": "NL",
+        "trackingNumber": "3SNL000000001",
+        "transitDays": None,
+        "result": {
+            "origin": {
+                "items": [
+                    event("2071", "OutForDelivery", "2026-07-27 08:30:00", "+02:00"),
+                    event(
+                        "208",
+                        "DeliveryFail_Other",
+                        "2026-07-27 16:45:00",
+                        "+02:00",
+                    ),
+                    event("210", "Returned", "2026-07-28 10:15:00", "+02:00"),
                 ]
             }
         },
