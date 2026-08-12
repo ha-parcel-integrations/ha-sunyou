@@ -97,7 +97,7 @@ agreement if that ever changes.
   seen, and SunYou answers `has: false` (not an error) for anything it
   doesn't recognise, so there is nothing to gain from rejecting an unfamiliar
   channel prefix client-side.
-- **Pre-1.0 (`status_vocab` not provably closed).** Unrecognised
+- **`status_vocab` not provably closed.** Unrecognised
   `status`/`eventCode` pairs, a `result` leg other than `origin`, a
   `createTime` parse failure or missing `timeZone`, and the first parcel
   carrying `carrierName` (seen once in 21 research parcels — that handoff
