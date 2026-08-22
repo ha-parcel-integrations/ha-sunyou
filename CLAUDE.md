@@ -32,7 +32,7 @@ you act in one of these areas:
 - **Per-parcel sensors are removed by the summary sensor** via
   `entity_registry.async_remove` (self-removal races and leaves ghosts).
 
-**API mechanics live in `carrier-research/api/sunyou/` (private research repo)** —
+**API mechanics live in `carrier-research/sunyou/api/` (private research repo)** —
 the keyless JSONP `queryTrack` endpoint, the `has:false` not-found signalling,
 the payload→canonical mapping and the 17-code `status`/`eventCode`
 vocabulary. Do not duplicate them here, and do not re-create a local
@@ -80,7 +80,7 @@ agreement if that ever changes.
   a pickup code is `at_pickup_point`, never `delivered`) and `210`
   (`Returned`) -> `RETURNING`, distinct from the `208`/`20899` failure events
   that precede it. `200` (`InTransit`) and `20622` (`ClearanceInspect`) were
-  confirmed the same day, both `IN_TRANSIT`. `carrier-research/api/sunyou/`
+  confirmed the same day, both `IN_TRANSIT`. `carrier-research/sunyou/api/`
   is updated to match — the doc's "there may simply be no `at_pickup_point`"
   reasoning is superseded, not a standing ruling anymore.
 - **Poll interval is `configurable`, unlike Cainiao's `fixed`.** ~70 probe
@@ -155,5 +155,5 @@ python -m pytest tests/ --cov=custom_components.sunyou
 
 Coverage must stay **above 95%** (silver `test-coverage` rule). Run before
 committing. A code change updates the README + this file + `docs/` in the same
-commit; the API reference lives in this carrier's directory under the private
-`carrier-research/api/`, never in this repo.
+commit; the API reference lives in `carrier-research/sunyou/api/` (this
+carrier's own directory in the private research repo), never in this repo.
