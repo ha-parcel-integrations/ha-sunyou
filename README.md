@@ -43,7 +43,7 @@ Part of the [ha-parcel-integrations](https://github.com/ha-parcel-integrations) 
 
 ## Requirements
 
-- Home Assistant 2024.7 or newer
+- Home Assistant 2024.12 or newer
 - A SunYou (SYPost) tracking code, as printed on the shipping confirmation
   from the shop/marketplace that used SunYou for the cross-border leg — no
   account needed
@@ -94,6 +94,8 @@ Standard HA removal applies: **Settings → Devices & Services → SunYou → �
 A delivered parcel moves from its per-parcel sensor to the delivered sensor automatically.
 
 A **Deliveries** calendar entity is also created, for parity with the other carriers in the suite, but it will always be empty for SunYou — see [Known limitation](#known-limitation-no-delivery-forecast).
+
+A **Refresh** button entity forces an immediate poll, without waiting for the next scheduled interval.
 
 ## Parcel status reference
 
