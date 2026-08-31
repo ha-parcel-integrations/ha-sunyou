@@ -43,7 +43,6 @@ Part of the [ha-parcel-integrations](https://github.com/ha-parcel-integrations) 
 
 ## Requirements
 
-- Home Assistant 2024.12 or newer
 - A SunYou (SYPost) tracking code, as printed on the shipping confirmation
   from the shop/marketplace that used SunYou for the cross-border leg — no
   account needed
