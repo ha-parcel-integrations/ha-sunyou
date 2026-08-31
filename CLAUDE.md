@@ -83,17 +83,6 @@ agreement if that ever changes.
   confirmed the same day, both `IN_TRANSIT`. `carrier-research/sunyou/api/`
   is updated to match — the doc's "there may simply be no `at_pickup_point`"
   reasoning is superseded, not a standing ruling anymore.
-- **Poll interval is `configurable`, unlike Cainiao's `fixed`.** ~70 probe
-  requests in a few minutes during research drew no 429, no block and no
-  captcha — SunYou is a standalone operator, not Alibaba, so the soft-ban risk
-  that keeps Cainiao's cadence hard-coded does not transfer here. The default
-  (`DEFAULT_REFRESH_INTERVAL = 60`) still sits on the conservative side of the
-  suite's options, though: SunYou has **no batching** (one HTTP request per
-  tracked parcel per poll, unlike Cainiao's one request for ten), so a
-  household tracking several parcels fans out more traffic per poll here than
-  anywhere else in the suite. If a user ever reports a 429, regenerate with
-  `--interval fixed` — Cainiao's `const.py`/`coordinator.py` is the worked
-  example.
 - **Tracking-code format stays at the loose template default**
   (`^[A-Z0-9]{6,30}$`), not the tighter `^SY[A-Z0-9]{2,}\d{6,}$` every
   observed number happens to fit — only the `SYAE` prefix has actually been
@@ -113,16 +102,31 @@ agreement if that ever changes.
 
 The options flow is one sectioned form (`data_entry_flow.section`); changes apply
 without a restart. Two models, **do not mix them**:
-- **Account-less carriers** (the default) apply changes live: an update listener
-  retunes `coordinator.update_interval` and calls `async_request_refresh()`, so
-  added/removed parcel sensors appear immediately.
+- **Account-less carriers** (the default, and what this repo is) apply changes
+  live: an update listener calls `async_request_refresh()`, so added/removed
+  parcel sensors appear immediately. This is also the resume path after
+  dynamic polling has fully suspended (see below) — adding a parcel back
+  triggers the same refresh, which re-arms scheduling.
 - **Account-based carriers** call `async_schedule_reload` on submit and register
   **no** update listener. Combining a listener with a reload-on-update flow is
   deprecated, an error in HA 2026.12+.
 
-The user-tunable poll interval is a deliberate HACS divergence (see
-CONVENTIONS.md); a carrier that throttles is generated with a fixed cadence and no
-polling option at all.
+## Polling
+
+Polling is dynamic and status-driven, unconditionally — there is no
+user-facing interval option. The coordinator recomputes its own cadence at
+the end of every refresh: a quiet window (00:00–06:00 local, with catch-up
+anchors at each end), a 15-minute hot tier when a tracked parcel is
+`out_for_delivery` (immediately, or from an hour before `planned_from`), a
+45-minute mid tier otherwise, and a full stop (`update_interval = None`)
+when nothing is tracked or everything tracked is delivered. SunYou's own
+payload never carries a delivery-forecast field at all (see "Known
+limitation: no delivery forecast" in the README) — `planned_from` is always
+`None`, so an `out_for_delivery` parcel always goes straight to the hot
+tier; there is no lookahead window to wait for. See `coordinator.py`'s
+`_hottest_tier_minutes` / `_next_update_interval` and
+`ha-carrier-template`'s `example_carrier/coordinator.py` for the canonical
+shape this mirrors.
 
 ## Module layout
 

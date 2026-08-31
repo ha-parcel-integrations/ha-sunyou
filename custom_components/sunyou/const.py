@@ -74,25 +74,30 @@ CONF_DELIVERED_FILTER_AMOUNT = "delivered_filter_amount"
 DEFAULT_DELIVERED_FILTER_TYPE = "days"
 DEFAULT_DELIVERED_FILTER_AMOUNT = 7
 
-# Refresh interval (minutes) controls how often the coordinator polls SunYou.
+# Dynamic, status-driven polling — unconditional, no user-facing interval
+# option. See carrier-research/dynamic-polling.md for the full algorithm and
+# the reasoning behind it.
 #
-# ``configurable`` (not ``fixed``) is a deliberate choice, not the template
-# default: ~70 probe requests in a few minutes drew no 429, no block and no
-# captcha (rate_limit: none-observed). That is *unlike* Cainiao, which is
-# generated ``--interval fixed`` because Alibaba soft-bans unusual traffic and
-# an IP ban there costs the user every AliExpress service — that reasoning
-# does not transfer to SunYou, a standalone operator.
-#
-# The default still sits on the conservative side of the options, though:
-# SunYou has **no batching** (one HTTP request per tracked parcel per poll,
-# where Cainiao does one request for ten), so a household tracking several
-# parcels fans out more traffic per poll here than anywhere else in the suite.
-# If a user ever reports a 429, ``--interval fixed`` is the documented
-# fallback and Cainiao (``custom_components/cainiao/const.py``) is the worked
-# example of how to regenerate with it.
-CONF_REFRESH_INTERVAL = "refresh_interval"
-REFRESH_INTERVAL_OPTIONS = (15, 30, 60, 120, 240)
-DEFAULT_REFRESH_INTERVAL = 60
+# Quiet window: no polling between these local hours except the two anchors
+# below, for overnight / end-of-day catch-up.
+QUIET_WINDOW_START_HOUR = 0
+QUIET_WINDOW_END_HOUR = 6
+
+# Cadence while polling is active (minutes). Hot = at least one tracked,
+# not-yet-delivered parcel is out_for_delivery within HOT_LOOKAHEAD_HOURS of
+# its planned_from (or has no planned_from at all); mid = anything else still
+# in flight. This is a barcode-based coordinator (Section 2.1): when every
+# tracked parcel is delivered, or nothing is tracked, polling stops entirely
+# instead of falling to the mid tier — see coordinator.py's
+# ``_hottest_tier_minutes``.
+HOT_INTERVAL_MINUTES = 15
+MID_INTERVAL_MINUTES = 45
+HOT_LOOKAHEAD_HOURS = 1
+
+# Small, stable per-install offset added to every computed interval so
+# different installs don't all hit an anchor or tier boundary at the same
+# second. Deterministic (hash of the config entry id), not random.
+STAGGER_MINUTES = 7
 
 # Per-parcel status history is opt-in and off by default, identical across the
 # suite. Keep it off by default even when — as here — the timeline arrives in
