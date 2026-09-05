@@ -34,7 +34,7 @@ you act in one of these areas:
 
 **API mechanics live in `carrier-research/sunyou/api/` (private research repo)** —
 the keyless JSONP `queryTrack` endpoint, the `has:false` not-found signalling,
-the payload→canonical mapping and the 17-code `status`/`eventCode`
+the payload→canonical mapping and the 28-code `status`/`eventCode`
 vocabulary. Do not duplicate them here, and do not re-create a local
 `docs/api/`.
 
@@ -75,28 +75,26 @@ agreement if that ever changes.
   UTC (warned once) rather than raising, and a `createTime` that fails to
   parse drops that one event (warned once) rather than guessing.
 - **`at_pickup_point` and `returning` are mapped, confirmed live 2026-08-13**
-  from a user's WARNING log, not the 21-parcel research capture: `207`
-  (`ReadyForPickup`) -> `AT_PICKUP_POINT` (Cainiao's `GTMS_STA_SIGNED` rule —
-  a pickup code is `at_pickup_point`, never `delivered`) and `210`
-  (`Returned`) -> `RETURNING`, distinct from the `208`/`20899` failure events
-  that precede it. `200` (`InTransit`) and `20622` (`ClearanceInspect`) were
-  confirmed the same day, both `IN_TRANSIT`. `carrier-research/sunyou/api/`
-  is updated to match — the doc's "there may simply be no `at_pickup_point`"
-  reasoning is superseded, not a standing ruling anymore.
+  from a user's WARNING log, not the 21-parcel research capture — per
+  Cainiao's `GTMS_STA_SIGNED` rule, a pickup code is `at_pickup_point`, never
+  `delivered`, and the return code is distinct from the failure events that
+  precede it. `carrier-research/sunyou/api/` is updated to match — the doc's
+  "there may simply be no `at_pickup_point`" reasoning is superseded, not a
+  standing ruling anymore.
 - **Tracking-code format stays at the loose template default**
   (`^[A-Z0-9]{6,30}$`), not the tighter `^SY[A-Z0-9]{2,}\d{6,}$` every
   observed number happens to fit — only the `SYAE` prefix has actually been
   seen, and SunYou answers `has: false` (not an error) for anything it
   doesn't recognise, so there is nothing to gain from rejecting an unfamiliar
   channel prefix client-side.
-- **`status_vocab` not provably closed.** Unrecognised
-  `status`/`eventCode` pairs, a `result` leg other than `origin`, a
-  `createTime` parse failure or missing `timeZone`, and the first parcel
-  carrying `carrierName` (seen once in 21 research parcels — that handoff
-  block's field inventory is thin) all log a one-shot `WARNING` with an
-  `issues/new?template=unrecognised_status.yml` link. Do not add a status
-  mapping without evidence — a wrong mapping fires events for a state the
-  parcel isn't in.
+- **`status_vocab` not provably closed.** The 28-code `status`/`eventCode`
+  vocabulary, see `carrier-research/sunyou/api/`. Unrecognised pairs, a
+  `result` leg other than `origin`, a `createTime` parse failure or missing
+  `timeZone`, and the first parcel carrying `carrierName` (seen once in 21
+  research parcels — that handoff block's field inventory is thin) all log a
+  one-shot `WARNING` with an `issues/new?template=unrecognised_status.yml`
+  link. Do not add a status mapping without evidence — a wrong mapping fires
+  events for a state the parcel isn't in.
 
 ## Options and reloads
 
