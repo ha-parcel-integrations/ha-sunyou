@@ -115,9 +115,9 @@ _STATUS_MAP: dict[str, ParcelStatus] = {
 }
 
 # ---------------------------------------------------------------------------
-# One-shot pre-1.0 warnings (status_vocab is not provably closed — see
-# tracking.md). Each condition warns exactly once per HA session, not once
-# per occurrence, so a chatty parcel doesn't flood the log.
+# One-shot pre-1.0 warnings (status_vocab is not provably closed). Each
+# condition warns exactly once per HA session, not once per occurrence, so a
+# chatty parcel doesn't flood the log.
 # ---------------------------------------------------------------------------
 
 _unmapped_statuses_logged: set[str] = set()
