@@ -13,9 +13,6 @@ its naive ``createTime`` plus a sibling per-event ``timeZone`` is not the
 epoch-ms/ISO shape the suite usually sees. The sort contract and the
 delivered filter at the bottom are suite-wide machinery, kept identical
 across carriers on purpose.
-
-Full mechanics (payload, the 17-code vocabulary, the traps below):
-carrier-research/api/sunyou/tracking.md.
 """
 from __future__ import annotations
 

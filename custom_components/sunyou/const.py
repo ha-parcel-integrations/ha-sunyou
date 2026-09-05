@@ -44,7 +44,7 @@ CAPABILITIES = frozenset({"url", "history"})
 
 # SunYou's public tracking endpoint (SYPost) — the one sypost.net's own
 # consumer tracking page calls. Confirmed live against 21 real parcels
-# (2026-08-05). Full mechanics: carrier-research/api/sunyou/tracking.md.
+# (2026-08-05).
 #
 # * Keyless, **JSONP** — the body is wrapped in ``searchCallback(...)``, not
 #   bare JSON. ``toLanguage=en_US`` fixes the human-readable event text so we
@@ -75,8 +75,7 @@ DEFAULT_DELIVERED_FILTER_TYPE = "days"
 DEFAULT_DELIVERED_FILTER_AMOUNT = 7
 
 # Dynamic, status-driven polling — unconditional, no user-facing interval
-# option. See carrier-research/dynamic-polling.md for the full algorithm and
-# the reasoning behind it.
+# option.
 #
 # Quiet window: no polling between these local hours except the two anchors
 # below, for overnight / end-of-day catch-up.

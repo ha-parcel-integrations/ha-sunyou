@@ -5,7 +5,7 @@ in ``searchCallback(...)`` with a hardcoded callback name, so there is no way
 to ask for bare JSON. The not-found signal lives in the body (``data[0].has``),
 never in the HTTP status or the ``status: 1`` / ``message: "success"``
 envelope, which is present on every response including a bogus tracking
-number. Full mechanics: carrier-research/api/sunyou/tracking.md.
+number.
 """
 from __future__ import annotations
 
