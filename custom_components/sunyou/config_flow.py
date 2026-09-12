@@ -30,18 +30,6 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-# Every observed SunYou number fits ``^SY[A-Z0-9]{2,}\d{6,}$`` (e.g.
-# ``SYAE006809461``), but only the ``SYAE`` prefix has actually been seen in
-# the 21-parcel research capture. Deliberately kept at the loose template
-# default (upper-case alphanumeric, 6-30 chars) rather than tightened to that
-# pattern: a tight regex here would reject channel prefixes we have never
-# met, and this regex is also what the ``track_parcel`` service and the
-# e-mail-parsing example automation validate against — a false negative is
-# far more annoying than a bad code that simply comes back "not found" (SunYou
-# answers HTTP 200 either way) on the next poll.
-_TRACKING_CODE_RE = re.compile(r"^[A-Z0-9]{6,30}$")
-
-
 def normalize_tracking_code(value: str) -> str:
     """Return the tracking code upper-cased with separators stripped.
 
@@ -53,8 +41,13 @@ def normalize_tracking_code(value: str) -> str:
 
 
 def valid_tracking_code(value: str) -> bool:
-    """Whether ``value`` looks like a SunYou tracking code."""
-    return bool(_TRACKING_CODE_RE.match(value))
+    """Accept any non-empty code.
+
+    SunYou's real number formats vary too much (only the ``SYAE`` prefix has
+    actually been seen) to gate on client-side; an invalid code just comes
+    back "not found" from the API anyway.
+    """
+    return bool(value)
 
 
 def _current_parcels(entry: ConfigEntry) -> list[dict[str, str]]:

@@ -87,12 +87,12 @@ agreement if that ever changes.
   precede it. `carrier-research/sunyou/api/` is updated to match — the doc's
   "there may simply be no `at_pickup_point`" reasoning is superseded, not a
   standing ruling anymore.
-- **Tracking-code format stays at the loose template default**
-  (`^[A-Z0-9]{6,30}$`), not the tighter `^SY[A-Z0-9]{2,}\d{6,}$` every
-  observed number happens to fit — only the `SYAE` prefix has actually been
+- **Tracking-code format is unvalidated locally — any non-empty code is
+  accepted.** Every observed number happens to fit
+  `^SY[A-Z0-9]{2,}\d{6,}$`, but only the `SYAE` prefix has actually been
   seen, and SunYou answers `has: false` (not an error) for anything it
   doesn't recognise, so there is nothing to gain from rejecting an unfamiliar
-  channel prefix client-side.
+  channel prefix — or any other guessed shape — client-side.
 - **`status_vocab` not provably closed.** The 28-code `status`/`eventCode`
   vocabulary, see `carrier-research/sunyou/api/`. Unrecognised pairs, a
   `result` leg other than `origin`, a `createTime` parse failure or missing
