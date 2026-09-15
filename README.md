@@ -9,7 +9,7 @@
 
 A custom Home Assistant integration that tracks your [SunYou](https://sypost.net) (SYPost) parcels — a Chinese cross-border postal/logistics operator used by cheap Asia→EU e-commerce shipments (AliExpress-style orders and similar). SunYou typically sees a parcel weeks before the national carrier that eventually delivers it does. No account is needed — you enter the tracking code yourself, just like on the SunYou website.
 
-Part of the [ha-parcel-integrations](https://ha-parcel-integrations.io) family: it publishes the same canonical parcel format, statuses and events as the other carrier integrations, so it plugs straight into the [Parcel Aggregator](https://github.com/ha-parcel-integrations/ha-parcel-aggregator) and cross-carrier automations.
+Part of the [ha-parcel-integrations](https://ha-parcel-integrations.github.io/) family: it publishes the same canonical parcel format, statuses and events as the other carrier integrations, so it plugs straight into the [Parcel Aggregator](https://github.com/ha-parcel-integrations/ha-parcel-aggregator) and cross-carrier automations.
 
 ## Contents
 
@@ -193,13 +193,13 @@ logger:
 
 ## Related integrations
 
-This integration is part of [**ha-parcel-integrations**](https://ha-parcel-integrations.io) — a family of
+This integration is part of [**ha-parcel-integrations**](https://ha-parcel-integrations.github.io/) — a family of
 parcel-carrier integrations that all publish the same canonical parcel format,
 statuses and events.
 
 - [**Parcel Aggregator**](https://github.com/ha-parcel-integrations/ha-parcel-aggregator) rolls every installed carrier
   up into one set of sensors.
-- Browse [the organisation](https://ha-parcel-integrations.io) for the current list of supported carriers.
+- Browse [the organisation](https://ha-parcel-integrations.github.io/) for the current list of supported carriers.
 
 ## Disclaimer
 
