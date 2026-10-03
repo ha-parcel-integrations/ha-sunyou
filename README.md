@@ -137,7 +137,7 @@ The carrier's own human-readable text is always available as `raw_status`. SunYo
 
 ## Known limitation: no delivery forecast
 
-SunYou's tracking API never returns an expected delivery date or window — across 21 real parcels used to confirm this payload, the only date-like field on a delivered parcel was `transitDays` (elapsed days since shipping, not an ETA). Nothing in the response is a forecast.
+SunYou's tracking API never returns an expected delivery date or window — on every real parcel checked, the only date-like field on a delivered parcel was `transitDays` (elapsed days since shipping, not an ETA). Nothing in the response is a forecast.
 
 Three entities exist for parity with the other carriers in this suite, but are permanently inert for SunYou as a result:
 
