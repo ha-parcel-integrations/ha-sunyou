@@ -7,6 +7,7 @@ never in the HTTP status or the ``status: 1`` / ``message: "success"``
 envelope, which is present on every response including a bogus tracking
 number.
 """
+
 from __future__ import annotations
 
 import json

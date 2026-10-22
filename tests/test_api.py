@@ -1,4 +1,5 @@
 """Tests for the SunYou API client — keyless JSONP, has:false is not-found."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 import aiohttp
@@ -6,11 +7,7 @@ import pytest
 
 from custom_components.sunyou.api import SunYouApiClient, SunYouApiError
 
-from .payloads import (
-    delivered_sample,
-    jsonp_envelope,
-    not_found_sample,
-)
+from .payloads import delivered_sample, jsonp_envelope, not_found_sample
 
 CODE = "SYAE006809461"
 
@@ -50,7 +47,9 @@ async def test_get_parcel_returns_none_when_not_found():
 async def test_get_parcel_raises_when_body_is_unreadable():
     response = AsyncMock()
     response.status = 200
-    response.text = AsyncMock(side_effect=UnicodeDecodeError("utf-8", b"", 0, 1, "boom"))
+    response.text = AsyncMock(
+        side_effect=UnicodeDecodeError("utf-8", b"", 0, 1, "boom")
+    )
     ctx = MagicMock()
     ctx.__aenter__ = AsyncMock(return_value=response)
     ctx.__aexit__ = AsyncMock(return_value=False)

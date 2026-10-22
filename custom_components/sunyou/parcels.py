@@ -14,11 +14,12 @@ epoch-ms/ISO shape the suite usually sees. The sort contract and the
 delivered filter at the bottom are suite-wide machinery, kept identical
 across carriers on purpose.
 """
+
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta, timezone
 import logging
 import re
-from datetime import datetime, timedelta, timezone
 
 from homeassistant.config_entries import ConfigEntry
 
@@ -83,35 +84,35 @@ NEW_ISSUE_URL = (
 # ``210``/``Returned`` is. Do not read ``DeliveryFail_Return`` as a ``210``
 # synonym: it is the failure reason, not the return leg.
 _STATUS_MAP: dict[str, ParcelStatus] = {
-    "101": ParcelStatus.REGISTERED,        # PreAlert
-    "102": ParcelStatus.REGISTERED,        # InboundScan
-    "105": ParcelStatus.IN_TRANSIT,        # Dispatch
-    "106": ParcelStatus.IN_TRANSIT,        # PortDeparture
-    "200": ParcelStatus.IN_TRANSIT,        # InTransit
-    "201": ParcelStatus.IN_TRANSIT,        # TransitCountryArrival
-    "205": ParcelStatus.IN_TRANSIT,        # TransitCountryDeparted
-    "206": ParcelStatus.IN_TRANSIT,        # DestinationAirPortArrival
-    "20622": ParcelStatus.IN_TRANSIT,      # ClearanceInspect
-    "2061": ParcelStatus.IN_TRANSIT,       # HandoverLastMile
-    "2062": ParcelStatus.IN_TRANSIT,       # ClearanceProcess
-    "2064": ParcelStatus.IN_TRANSIT,       # ClearanceSuccessed (SunYou's own spelling)
-    "2067": ParcelStatus.IN_TRANSIT,       # DeliveryStationArrival
-    "2068": ParcelStatus.OUT_FOR_DELIVERY, # DeliveryStationDepart
-    "207": ParcelStatus.AT_PICKUP_POINT,   # ReadyForPickup
-    "2071": ParcelStatus.OUT_FOR_DELIVERY, # OutForDelivery
-    "2072": ParcelStatus.OUT_FOR_DELIVERY, # OutForDelivery_Second
-    "208": ParcelStatus.PROBLEM,           # DeliveryFail_Other
-    "20801": ParcelStatus.PROBLEM,         # DeliveryFail_Retry
-    "20802": ParcelStatus.PROBLEM,         # DeliveryFail_Address
-    "20803": ParcelStatus.PROBLEM,         # DeliveryFail_Contact
-    "20806": ParcelStatus.PROBLEM,         # DeliveryFail_NoService
-    "20810": ParcelStatus.PROBLEM,         # DeliveryFail_Return (the reason, not the return leg)
-    "20899": ParcelStatus.PROBLEM,         # DeliveryFail_SecondOther
-    "209": ParcelStatus.DELIVERED,         # Delivered
-    "20903": ParcelStatus.DELIVERED,       # Delivered_Mailbox
-    "20906": ParcelStatus.DELIVERED,       # Delivered_Doorstep
-    "210": ParcelStatus.RETURNING,         # Returned
-    "220": ParcelStatus.PROBLEM,           # Exception
+    "101": ParcelStatus.REGISTERED,  # PreAlert
+    "102": ParcelStatus.REGISTERED,  # InboundScan
+    "105": ParcelStatus.IN_TRANSIT,  # Dispatch
+    "106": ParcelStatus.IN_TRANSIT,  # PortDeparture
+    "200": ParcelStatus.IN_TRANSIT,  # InTransit
+    "201": ParcelStatus.IN_TRANSIT,  # TransitCountryArrival
+    "205": ParcelStatus.IN_TRANSIT,  # TransitCountryDeparted
+    "206": ParcelStatus.IN_TRANSIT,  # DestinationAirPortArrival
+    "20622": ParcelStatus.IN_TRANSIT,  # ClearanceInspect
+    "2061": ParcelStatus.IN_TRANSIT,  # HandoverLastMile
+    "2062": ParcelStatus.IN_TRANSIT,  # ClearanceProcess
+    "2064": ParcelStatus.IN_TRANSIT,  # ClearanceSuccessed (SunYou's own spelling)
+    "2067": ParcelStatus.IN_TRANSIT,  # DeliveryStationArrival
+    "2068": ParcelStatus.OUT_FOR_DELIVERY,  # DeliveryStationDepart
+    "207": ParcelStatus.AT_PICKUP_POINT,  # ReadyForPickup
+    "2071": ParcelStatus.OUT_FOR_DELIVERY,  # OutForDelivery
+    "2072": ParcelStatus.OUT_FOR_DELIVERY,  # OutForDelivery_Second
+    "208": ParcelStatus.PROBLEM,  # DeliveryFail_Other
+    "20801": ParcelStatus.PROBLEM,  # DeliveryFail_Retry
+    "20802": ParcelStatus.PROBLEM,  # DeliveryFail_Address
+    "20803": ParcelStatus.PROBLEM,  # DeliveryFail_Contact
+    "20806": ParcelStatus.PROBLEM,  # DeliveryFail_NoService
+    "20810": ParcelStatus.PROBLEM,  # DeliveryFail_Return (the reason, not the return leg)
+    "20899": ParcelStatus.PROBLEM,  # DeliveryFail_SecondOther
+    "209": ParcelStatus.DELIVERED,  # Delivered
+    "20903": ParcelStatus.DELIVERED,  # Delivered_Mailbox
+    "20906": ParcelStatus.DELIVERED,  # Delivered_Doorstep
+    "210": ParcelStatus.RETURNING,  # Returned
+    "220": ParcelStatus.PROBLEM,  # Exception
 }
 
 # ---------------------------------------------------------------------------
@@ -163,7 +164,7 @@ def _warn_unexpected_leg(leg_name: str, item_count: int) -> None:
 
 def _warn_create_time_parse_failure(value: str) -> None:
     """Log a ``createTime`` that fails the expected format, once."""
-    global _create_time_parse_failure_logged
+    global _create_time_parse_failure_logged  # noqa: PLW0603 - once-per-process flag
     if _create_time_parse_failure_logged:
         return
     _create_time_parse_failure_logged = True
@@ -178,7 +179,7 @@ def _warn_create_time_parse_failure(value: str) -> None:
 
 def _warn_missing_timezone(create_time: str) -> None:
     """Log an event with no ``timeZone`` sibling, once."""
-    global _missing_timezone_logged
+    global _missing_timezone_logged  # noqa: PLW0603 - once-per-process flag
     if _missing_timezone_logged:
         return
     _missing_timezone_logged = True
@@ -202,7 +203,9 @@ def _lookup(status: str | None, event_code: str | None) -> ParcelStatus | None:
     return mapped
 
 
-def map_parcel_status(status: str | None, event_code: str | None = None) -> ParcelStatus:
+def map_parcel_status(
+    status: str | None, event_code: str | None = None
+) -> ParcelStatus:
     """Map a ``status`` code to a canonical :class:`ParcelStatus`.
 
     ``None`` (no events at all — the normal state for a just-registered
@@ -212,7 +215,9 @@ def map_parcel_status(status: str | None, event_code: str | None = None) -> Parc
     return _lookup(status, event_code) or ParcelStatus.UNKNOWN
 
 
-def map_event_status(status: str | None, event_code: str | None = None) -> ParcelStatus | None:
+def map_event_status(
+    status: str | None, event_code: str | None = None
+) -> ParcelStatus | None:
     """Map a history entry's ``status`` code to a canonical status, or ``None``.
 
     Unmapped codes keep ``status: null`` on the history entry (rather than
@@ -231,11 +236,11 @@ def parse_iso(value: str | None) -> datetime | None:
     if not value:
         return None
     try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(str(value))
     except ValueError:
         return None
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
+        parsed = parsed.replace(tzinfo=UTC)
     return parsed
 
 
@@ -285,7 +290,7 @@ def _event_timestamp(raw_event: dict) -> str | None:
     offset = _parse_timezone_offset(raw_event.get("timeZone"))
     if offset is None:
         _warn_missing_timezone(str(create_time))
-        offset = timezone.utc
+        offset = UTC
     return naive.replace(tzinfo=offset).isoformat()
 
 
@@ -362,7 +367,9 @@ def build_history(
             continue
         entry = {
             "timestamp": timestamp,
-            "status": map_event_status(raw_event.get("status"), raw_event.get("eventCode")),
+            "status": map_event_status(
+                raw_event.get("status"), raw_event.get("eventCode")
+            ),
             "raw_status": raw_event.get("eventCode"),
         }
         parsed = parse_iso(timestamp)
@@ -417,7 +424,9 @@ def normalize_parcel(raw: dict, *, include_history: bool = False) -> dict:
 
     if newest is not None:
         newest_event, newest_timestamp = newest
-        status = map_parcel_status(newest_event.get("status"), newest_event.get("eventCode"))
+        status = map_parcel_status(
+            newest_event.get("status"), newest_event.get("eventCode")
+        )
         raw_status = newest_event.get("eventCode")
     else:
         status = ParcelStatus.UNKNOWN
@@ -478,14 +487,12 @@ def apply_delivered_filter(parcels: list[dict], entry: ConfigEntry) -> list[dict
     shows.
     """
     options = entry.options
-    filter_type = options.get(
-        CONF_DELIVERED_FILTER_TYPE, DEFAULT_DELIVERED_FILTER_TYPE
-    )
+    filter_type = options.get(CONF_DELIVERED_FILTER_TYPE, DEFAULT_DELIVERED_FILTER_TYPE)
     amount = int(
         options.get(CONF_DELIVERED_FILTER_AMOUNT, DEFAULT_DELIVERED_FILTER_AMOUNT)
     )
     if filter_type == "days":
-        cutoff = datetime.now(timezone.utc) - timedelta(days=amount)
+        cutoff = datetime.now(UTC) - timedelta(days=amount)
         return [
             parcel
             for parcel in parcels

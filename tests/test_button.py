@@ -1,4 +1,5 @@
 """Tests for the SunYou refresh button."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 from custom_components.sunyou.button import SunYouRefreshButton

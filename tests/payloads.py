@@ -12,6 +12,7 @@ identical envelope shape and field names, with a synthetic event list built
 strictly from the 17-code vocabulary that same capture established. No field
 name is invented anywhere in this module.
 """
+
 from __future__ import annotations
 
 import json

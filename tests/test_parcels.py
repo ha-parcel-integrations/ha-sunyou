@@ -4,7 +4,8 @@ These need no Home Assistant instance — the whole point of keeping
 ``parcels.py`` free of I/O is that the carrier-specific mapping (the part you
 rewrite per carrier) can be tested as plain functions.
 """
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -45,7 +46,7 @@ from .payloads import (
 
 
 @pytest.mark.parametrize(
-    "status,expected",
+    ("status", "expected"),
     [
         ("101", ParcelStatus.REGISTERED),  # PreAlert
         ("102", ParcelStatus.REGISTERED),  # InboundScan
@@ -136,7 +137,7 @@ def test_displayStatus_is_stripped_from_raw():
 
 def test_parse_iso_handles_z_naive_and_garbage():
     assert parse_iso("2026-04-29T13:12:42Z").tzinfo is not None
-    assert parse_iso("2026-04-29T13:12:42").tzinfo == timezone.utc
+    assert parse_iso("2026-04-29T13:12:42").tzinfo == UTC
     assert parse_iso("not-a-date") is None
     assert parse_iso(None) is None
 
@@ -145,13 +146,9 @@ def test_event_timestamp_combines_naive_createtime_with_sibling_timezone():
     """The regression the trap warns about: parsing createTime as UTC would
     put a delivery up to 8 hours out. +08:00 origin event must NOT collapse
     to a UTC reading of the same wall-clock digits."""
-    history = build_history(
-        [event("101", "PreAlert", "2021-07-05 16:14:54", "+08:00")]
-    )
+    history = build_history([event("101", "PreAlert", "2021-07-05 16:14:54", "+08:00")])
     assert history[0]["timestamp"] == "2021-07-05T16:14:54+08:00"
-    assert parse_iso(history[0]["timestamp"]) != parse_iso(
-        "2021-07-05T16:14:54+00:00"
-    )
+    assert parse_iso(history[0]["timestamp"]) != parse_iso("2021-07-05T16:14:54+00:00")
 
 
 def test_event_timestamp_handles_negative_offset():
@@ -276,12 +273,14 @@ def test_unexpected_leg_warns_only_once(caplog):
 
 def test_normalize_handles_missing_or_malformed_result():
     assert normalize_parcel({"orderNo": "X"})["status"] == ParcelStatus.UNKNOWN
-    assert normalize_parcel({"orderNo": "X", "result": "not-a-dict"})[
-        "status"
-    ] == ParcelStatus.UNKNOWN
-    assert normalize_parcel({"orderNo": "X", "result": {"origin": "not-a-dict"}})[
-        "status"
-    ] == ParcelStatus.UNKNOWN
+    assert (
+        normalize_parcel({"orderNo": "X", "result": "not-a-dict"})["status"]
+        == ParcelStatus.UNKNOWN
+    )
+    assert (
+        normalize_parcel({"orderNo": "X", "result": {"origin": "not-a-dict"}})["status"]
+        == ParcelStatus.UNKNOWN
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -480,7 +479,7 @@ def _entry(filter_type: str, amount: int) -> MockConfigEntry:
 
 
 def _delivered_pair() -> list[dict]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return [
         {"barcode": "RECENT", "delivered_at": (now - timedelta(days=1)).isoformat()},
         {"barcode": "OLD", "delivered_at": (now - timedelta(days=30)).isoformat()},
@@ -510,4 +509,4 @@ def test_capabilities_are_known_values():
 
 def test_capabilities_are_url_and_history_only():
     """SunYou exposes nothing about the last leg — see normalize_parcel's docstring."""
-    assert CAPABILITIES == {"url", "history"}
+    assert {"url", "history"} == CAPABILITIES
