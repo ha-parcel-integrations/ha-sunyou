@@ -54,7 +54,8 @@ national carrier — so the same physical parcel can show up twice in the
 aggregator, once as SunYou and once as the last-mile carrier
 (`raw.trackingNumber` is the join key, exactly like Cainiao's `realMailNo` —
 an open aggregator-side item, not something this repo resolves). SunYou
-exposes nothing about the last leg (no sender/receiver/window/pickup/weight);
+exposes little about the last leg (no sender/receiver/window/weight; pickup
+is derived from the 207 ReadyForPickup events via `is_pickup`);
 the `None`s in `normalize_parcel` are intentional. Reflected in `const.py`'s
 `CAPABILITIES` (feeds the docs site's comparison table) — keep the two in
 agreement if that ever changes.
@@ -87,6 +88,13 @@ agreement if that ever changes.
   precede it. `carrier-research/sunyou/api/` is updated to match — the doc's
   "there may simply be no `at_pickup_point`" reasoning is superseded, not a
   standing ruling anymore.
+- **`pickup` is sticky, `pickup_point` is always `None`.** The payload has no
+  destination field, so `pickup` is true when the parcel is, or at any point
+  was, `at_pickup_point` in the events SunYou returned (read without the
+  unmapped-code warning), and stays true after collection. No event names the
+  point. Both `awaiting_pickup` and `en_route_to_pickup_point` exist;
+  `en_route_to_pickup_point` is empty until a pickup has been seen, because
+  the route is only known from that event.
 - **Tracking-code format is unvalidated locally — any non-empty code is
   accepted.** Every observed number happens to fit
   `^SY[A-Z0-9]{2,}\d{6,}$`, but only the `SYAE` prefix has actually been

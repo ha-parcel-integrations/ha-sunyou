@@ -117,6 +117,7 @@ Standard HA removal applies: **Settings → Devices & Services → SunYou → �
 | `sensor.sunyou_incoming_parcels` | Number of active tracked parcels, full list under the `parcels` attribute |
 | `sensor.sunyou_parcel_<code>` | One per tracked parcel; state is the canonical status, attributes carry the full normalised parcel |
 | `sensor.sunyou_next_delivery` | Earliest expected delivery moment across all active parcels. Present for parity with the other carriers in the suite, but SunYou never gives a delivery forecast — see [Known limitation](#known-limitation-no-delivery-forecast) |
+| `sensor.sunyou_en_route_to_pickup_point` | Incoming parcels on their way to a pickup point. SunYou only reveals the route once a parcel has been ready for pickup, so this is usually empty |
 | `sensor.sunyou_awaiting_pickup` | Incoming parcels that are ready to collect at a pickup point |
 | `sensor.sunyou_delivered_parcels` | Recently delivered parcels (see the retention option) |
 | `calendar.sunyou_deliveries` | Read-only calendar of expected deliveries, no extra API calls |
@@ -130,7 +131,7 @@ A **Refresh** button entity forces an immediate poll, without waiting for the ne
 
 ## Parcel status reference
 
-The `status` field is the carrier-agnostic enum shared by the whole integration family. SunYou's own event ladder is a pipeline of movements with no waiting state in it — nothing in the observed vocabulary maps to `at_pickup_point`, so that value never appears here (SunYou hands a parcel to a national carrier for the last mile, and any pickup-locker detail lives on *that* carrier's own tracking from then on):
+The `status` field is the carrier-agnostic enum shared by the whole integration family. SunYou's `ReadyForPickup` event maps to `at_pickup_point`; SunYou does not name the pickup point, so `pickup_point` stays empty. `pickup` becomes `true` once a parcel has been ready for pickup and stays `true` after collection:
 
 | Status | Meaning |
 |---|---|
