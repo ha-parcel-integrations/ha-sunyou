@@ -152,3 +152,12 @@ def test_next_delivery_skips_a_window_that_has_ended():
     ]
     sensor = SunYouNextDeliverySensor(_coordinator(parcels), _entry())
     assert sensor.extra_state_attributes["barcode"] == "NEW"
+
+
+def test_next_delivery_exposes_contents():
+    parcel = {
+        **_parcel("A", planned_from="2099-05-01T10:00:00Z"),
+        "contents": "Running shoes",
+    }
+    sensor = SunYouNextDeliverySensor(_coordinator([parcel]), _entry())
+    assert sensor.extra_state_attributes["contents"] == "Running shoes"

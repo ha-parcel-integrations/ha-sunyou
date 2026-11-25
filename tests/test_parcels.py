@@ -292,6 +292,7 @@ CANONICAL_KEYS = [
     "barcode",
     "sender",
     "receiver",
+    "contents",
     "status",
     "raw_status",
     "delivered",
@@ -510,3 +511,5 @@ def test_capabilities_are_known_values():
 def test_capabilities_are_url_and_history_only():
     """SunYou exposes nothing about the last leg — see normalize_parcel's docstring."""
     assert {"url", "history"} == CAPABILITIES
+    assert "contents" in KNOWN_CAPABILITIES
+    assert "contents" not in CAPABILITIES

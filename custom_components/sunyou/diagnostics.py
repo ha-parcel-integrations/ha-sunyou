@@ -26,6 +26,7 @@ TO_REDACT = {
     "barcode",
     "sender",
     "receiver",
+    "contents",
     "url",
     # SunYou payload fields
     "orderNo",
